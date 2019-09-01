@@ -1,3 +1,5 @@
+#include <Servo.h>
+
 // Use an ultrasonic sensor to activate a servo when anything is close enough
 
 
@@ -25,8 +27,12 @@
 #define TRIG_PIN 7            // Pins for utrasonic sensor
 #define ECHO_PIN 6
 
+#define SERVO_PIN 9           // Pin servo control is attached to
+#define ROTATE_DEGREES 300
+
 int receiver = 12;            // Signal Pin of IR receiver to Arduino Digital Pin 6
 bool isOn = false;            // Whether the device is tracking movement or no
+int pos = 0;                  // Servo position
 
 enum rotate_direction {clockwise = 1, counterclockwise = -1, none = 0};      // Direction types
 enum rotate_direction dir = clockwise;                    // Current direction of rotation
@@ -36,7 +42,8 @@ enum rotate_direction dir = clockwise;                    // Current direction o
 // Setup of proper sequencing for Motor Driver Pins
 // In1, In2, In3, In4 in the sequence 1-3-2-4
 
-Stepper stepper(STEPS, 8, 10, 9, 11);
+//Stepper stepper(STEPS, 8, 10, 9, 11);
+Servo servo;                // Create servo object
 SR04 sr04 = SR04(ECHO_PIN, TRIG_PIN);
 IRrecv irrecv(receiver);    // create instance of 'irrecv'
 decode_results results;     // create instance of 'decode_results'
@@ -76,10 +83,22 @@ bool isClose()
 void spin(int numRotations)
 {
   
+  for (int i = 0; i < numRotations; i++)
+  {
+    int newPos = random(0, 180);
+    servo.write(newPos);
+    delay(min(newPos * 25, 3000));
+    
+    for (pos = newPos; pos > 0; pos--) {
+      servo.write(pos);
+      delay(5);
+    }
+  }
+
 }
 
 void stepperSpin()
-{
+{/*
   for (int i = 0; i < numRotations; i++)
   {
     stepper.step(dir * STEPS);          // Forward
@@ -90,16 +109,17 @@ void stepperSpin()
   digitalWrite(8, LOW);
   digitalWrite(9, LOW);
   digitalWrite(10, LOW);
-  digitalWrite(11, LOW);      
+  digitalWrite(11, LOW);      */
 }
 
 // Run at the beginning of every turning-on
 void setup()
 { 
+  servo.attach(9);  // attaches the servo on pin 9 to the servo object
   irrecv.enableIRIn(); // Start the receiver
   // initialize the serial port:
   Serial.begin(9600);
-  stepper.setSpeed(SPEED);
+  //stepper.setSpeed(SPEED);
   
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
@@ -122,7 +142,7 @@ void loop()
     {
       // Spin the motor a set number of times
       spin(TRIGGER_ROTATIONS);  
-      delay(2000);
+      delay(500);
     }
   } else
   {
